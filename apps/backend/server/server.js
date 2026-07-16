@@ -2,6 +2,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import apiRoutes from "./routes/items.js";
+import userRoutes from "./routes/users.js";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api", apiRoutes);
+app.use("/api", userRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
