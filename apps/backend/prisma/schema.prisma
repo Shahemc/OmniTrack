@@ -5,24 +5,53 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-
-model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
+model User {
+  id        Int      @id @default(autoincrement())//primary key, Postgres numbers rows automatically. Rubric: PK on each table 
+  username  String   @unique @db.VarChar(30)//no duplicate profiles.
   createdAt DateTime @default(now()) @map("created_at")
-  items     Item[]
+  entries   Entry[]//ONE TO MANY RELATIONSHIP: ONE USER CAN HAVE MANY ENTRIES.
 
-  @@map("categories")
+  @@map("users")
 }
 
-model Item {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  description String   @db.Text
-  categoryId  Int      @map("category_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+model Entry {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  malId         Int      @map("mal_id")
+  mediaType     String   @db.VarChar(10)  @map("media_type")
+  title         String   @db.VarChar(255)
+  imageUrl      String?  @db.Text @map("image_url")
+  totalUnits    Int?     @map("total_units")
+  progress      Int      @default(0)
+  status        String   @default("in_progress") @db.VarChar(20)
+  prestigeCount Int      @default(0) @map("prestige_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  //^FOREIGN KEY RELATIONSHIP: MANY ENTRIES BELONG TO ONE USER. IF A USER IS DELETED, THEIR ENTRIES ARE ALSO DELETED. 
 
-  @@index([categoryId])
-  @@map("items")
+  @@unique([userId, malId, mediaType])//one user can't track the same series twice, but can track Naruto-anime AND Naruto-manga separately.
+  @@index([userId])
+  @@map("entries")
 }
+//EXAMPLE TO LOOK AT
+// model Category {
+//   id        Int      @id @default(autoincrement())
+//   name      String   @db.VarChar(100)
+//   createdAt DateTime @default(now()) @map("created_at")
+//   items     Item[]
+
+//   @@map("categories")
+// }
+
+// model Item {
+//   id          Int      @id @default(autoincrement())
+//   name        String   @db.VarChar(100)
+//   description String   @db.Text
+//   categoryId  Int      @map("category_id")
+//   createdAt   DateTime @default(now()) @map("created_at")
+//   category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+//   @@index([categoryId])
+//   @@map("items")
+// }

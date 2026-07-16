@@ -1,53 +1,58 @@
-import "dotenv/config";
-import prisma from "../server/db/prisma.js";
+import prisma from "../server/db/prisma.js";   
 
 async function main() {
-  await prisma.item.deleteMany();
-  await prisma.category.deleteMany();
+  // Wipe existing rows so seeding is repeatable
+  await prisma.entry.deleteMany();
+  await prisma.user.deleteMany();
 
-  const categories = await prisma.category.createMany({
-    data: [
-      { name: "Frontend" },
-      { name: "Backend" },
-      { name: "Database" }
-    ]
+  const demo = await prisma.user.create({
+    data: { username: "demo" },
   });
 
-  if (categories.count === 0) {
-    return;
-  }
-
-  const savedCategories = await prisma.category.findMany({
-    orderBy: { id: "asc" }
-  });
-
-  await prisma.item.createMany({
+  await prisma.entry.createMany({
     data: [
       {
-        name: "Build a React page",
-        description: "Create a component that fetches data from the Express API.",
-        categoryId: savedCategories[0].id
+        userId: demo.id,
+        malId: 20,
+        mediaType: "anime",
+        title: "Naruto",
+        imageUrl: "https://cdn.myanimelist.net/images/anime/1141/142503.jpg",
+        totalUnits: 220,
+        progress: 220,
+        status: "completed",
+        prestigeCount: 1,
       },
       {
-        name: "Create an Express route",
-        description: "Add a REST endpoint that returns JSON from PostgreSQL.",
-        categoryId: savedCategories[1].id
+        userId: demo.id,
+        malId: 21,
+        mediaType: "anime",
+        title: "One Piece",
+        imageUrl: "https://cdn.myanimelist.net/images/anime/1244/138851.jpg",
+        totalUnits: null, // ongoing — unknown episode count
+        progress: 1090,
+        status: "in_progress",
+        prestigeCount: 0,
       },
       {
-        name: "Design a table",
-        description: "Practice creating related tables with primary and foreign keys.",
-        categoryId: savedCategories[2].id
-      }
-    ]
+        userId: demo.id,
+        malId: 13,
+        mediaType: "manga",
+        title: "One Piece",
+        imageUrl: "https://cdn.myanimelist.net/images/manga/2/253146.jpg",
+        totalUnits: null,
+        progress: 1100,
+        status: "in_progress",
+        prestigeCount: 0,
+      },
+    ],
   });
+
+  console.log("Seeded user 'demo' with 3 entries");
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (error) => {
-    console.error(error);
-    await prisma.$disconnect();
+  .catch((e) => {
+    console.error(e);
     process.exit(1);
-  });
+  })
+  .finally(() => prisma.$disconnect());
