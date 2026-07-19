@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import apiRoutes from "./routes/items.js";
 import userRoutes from "./routes/users.js";
+import entryRoutes from "./routes/entries.js";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/api", apiRoutes);
 app.use("/api", userRoutes);
+app.use("/api", entryRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

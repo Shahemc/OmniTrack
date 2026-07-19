@@ -30,7 +30,7 @@ export async function createUser(req, res, next) {
       data: { 
         username: username.trim() 
     },
-    });
+    });WWWWWWW
     res.status(201).json({ message: "User created successfully", data: user });
   } catch (error) {
     if (error.code === "P2002") {
