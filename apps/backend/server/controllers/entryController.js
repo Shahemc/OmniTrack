@@ -1,19 +1,56 @@
-import { json } from "express";
 import prisma from "../db/prisma.js";
+import { Prisma } from "@prisma/client";
 
-// GET /api/entries?userId=1 — all entries for a user
+// GET /api/entries?userId=1&type=anime&status=in_progress&search=naruto&sort=title
 export async function getEntries(req, res, next) {
   const userId = Number(req.query.userId);
+  const { type, status, search, sort } = req.query;
 
   if (!userId) {
     return res.status(400).json({ message: "userId query parameter is required" });
   }
 
+  // Optional filters — only added to the SQL when provided
+  const typeFilter = type
+    ? Prisma.sql`AND e.media_type = ${type}`
+    : Prisma.empty;
+  const statusFilter = status
+    ? Prisma.sql`AND e.status = ${status}`
+    : Prisma.empty;
+  const searchFilter = search
+    ? Prisma.sql`AND e.title ILIKE ${"%" + search + "%"}`
+    : Prisma.empty;
+
+  // Sorting — fixed options only, never user text pasted into SQL
+  let orderBy = Prisma.sql`ORDER BY e.created_at DESC`; // default: newest first
+  if (sort === "oldest") orderBy = Prisma.sql`ORDER BY e.created_at ASC`;
+  if (sort === "title") orderBy = Prisma.sql`ORDER BY e.title ASC`;
+
   try {
-    const entries = await prisma.entry.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    });
+    const entries = await prisma.$queryRaw`
+      SELECT
+        e.id,
+        e.user_id        AS "userId",
+        e.mal_id         AS "malId",
+        e.media_type     AS "mediaType",
+        e.title,
+        e.image_url      AS "imageUrl",
+        e.total_units    AS "totalUnits",
+        e.progress,
+        e.status,
+        e.prestige_count AS "prestigeCount",
+        e.created_at     AS "createdAt",
+        e.updated_at     AS "updatedAt",
+        u.username
+      FROM entries e
+      JOIN users u ON e.user_id = u.id
+      WHERE e.user_id = ${userId}
+      ${typeFilter}
+      ${statusFilter}
+      ${searchFilter}
+      ${orderBy}
+    `;
+
     res.json({ message: "Entries retrieved successfully", data: entries });
   } catch (error) {
     next(error);
@@ -29,12 +66,12 @@ export async function getEntryById(req, res, next) {
   }
 
   try {
-    const entry = await prisma.entry.findUnique({ 
-        where: { id } });
+    const entry = await prisma.entry.findUnique({ where: { id } });
 
     if (!entry) {
       return res.status(404).json({ message: "Entry not found" });
     }
+
     res.json({ message: "Entry retrieved successfully", data: entry });
   } catch (error) {
     next(error);
@@ -72,9 +109,10 @@ export async function createEntry(req, res, next) {
       return res.status(400).json({ message: "That user does not exist" });
     }
     next(error);
-    }
+  }
 }
-    // PUT /api/entries/:id — update progress, status, or prestige
+
+// PUT /api/entries/:id — update progress, status, or prestige
 export async function updateEntry(req, res, next) {
   const id = Number(req.params.id);
   const { progress, status, prestige } = req.body;
@@ -101,17 +139,24 @@ export async function updateEntry(req, res, next) {
         where: { id },
         data: { progress: 0, status: "in_progress", prestigeCount: entry.prestigeCount + 1 },
       });
-      return res.json({ message: "Prestiged! Starting round " + (updated.prestigeCount + 1), data: updated });
+      return res.json({
+        message: "Prestiged! Starting round " + (updated.prestigeCount + 1),
+        data: updated,
+      });
     }
 
     // --- Normal update ---
     const data = {};
 
     if (progress !== undefined) {
-      const p = Number(progress);
-      if (Number.isNaN(p) || p < 0) {
-        return res.status(400).json({ message: "Progress must be a positive number" });
+      if (
+        typeof progress === "boolean" ||
+        !Number.isInteger(Number(progress)) ||
+        Number(progress) < 0
+      ) {
+        return res.status(400).json({ message: "Progress must be a positive whole number" });
       }
+      const p = Number(progress);
       if (entry.totalUnits !== null && p > entry.totalUnits) {
         return res.status(400).json({ message: `Progress cannot exceed ${entry.totalUnits}` });
       }
@@ -125,7 +170,9 @@ export async function updateEntry(req, res, next) {
     if (status !== undefined) {
       const allowed = ["plan_to_watch", "in_progress", "completed"];
       if (!allowed.includes(status)) {
-        return res.status(400).json({ message: "Status must be plan_to_watch, in_progress, or completed" });
+        return res.status(400).json({
+          message: "Status must be plan_to_watch, in_progress, or completed",
+        });
       }
       data.status = status;
     }
@@ -161,5 +208,3 @@ export async function deleteEntry(req, res, next) {
     next(error);
   }
 }
-
-
