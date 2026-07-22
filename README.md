@@ -34,4 +34,3 @@ Anime and manga fans who follow multiple series at once and want a simple person
 - **ORM:** Prisma (with raw SQL via `$queryRaw` for the join/search endpoint)
 - **External data:** Kitsu API (anime & manga metadata)
 - **Tooling:** Git & GitHub, Thunder Client (API testing)
-
