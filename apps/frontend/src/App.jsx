@@ -2,6 +2,8 @@ import { useState } from "react";
 import ProfilePicker from "./components/ProfilePicker.jsx";
 import Navbar from "./components/Navbar.jsx";
 import TrackerPage from "./components/TrackerPage.jsx";
+import SearchPage from "./components/SearchPage.jsx";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -21,9 +23,9 @@ export default function App() {
       />
 
       {page === "tracker" && <TrackerPage user={currentUser} />}
-      {page === "search" && (
-        <p className="text-zinc-400 p-8">Search coming tomorrow...</p>
-      )}
+      {page === "search" && <SearchPage user={currentUser} />}
+
+      <ScrollToTop />
     </main>
   );
 }

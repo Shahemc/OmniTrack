@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchUsers, createUser } from "../api/omnitrack.js";
+import { fetchUsers, createUser, deleteUser } from "../api/omnitrack.js";
 
 export default function ProfilePicker({ onSelect }) {
   const [users, setUsers] = useState([]);
@@ -17,12 +17,10 @@ export default function ProfilePicker({ onSelect }) {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
-
     if (!username.trim()) {
       setError("Please enter a username");
       return;
     }
-
     try {
       const newUser = await createUser(username.trim());
       onSelect(newUser);
@@ -31,9 +29,23 @@ export default function ProfilePicker({ onSelect }) {
     }
   }
 
+  async function handleDelete(event, user) {
+    event.stopPropagation();
+    if (!window.confirm(`Delete profile "${user.username}" and all its entries?`)) return;
+    try {
+      await deleteUser(user.id);
+      setUsers((current) => current.filter((u) => u.id !== user.id));
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   return (
-    <main className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-zinc-900 rounded-2xl p-8 shadow-xl">
+    <main className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-zinc-950 text-white flex items-center justify-center p-4 relative overflow-hidden">
+      {/* soft violet glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="relative w-full max-w-md bg-zinc-900/70 backdrop-blur border border-zinc-800 rounded-2xl p-8 shadow-2xl">
         <h1 className="text-3xl font-bold text-center">
           Omni<span className="text-violet-500">Track</span>
         </h1>
@@ -53,13 +65,23 @@ export default function ProfilePicker({ onSelect }) {
 
         <div className="flex flex-wrap gap-2 mb-8">
           {users.map((user) => (
-            <button
+            <div
               key={user.id}
+              className="group flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-violet-500 transition-colors rounded-full pl-1 pr-1 py-1 cursor-pointer"
               onClick={() => onSelect(user)}
-              className="bg-zinc-800 hover:bg-violet-600 transition-colors rounded-lg px-4 py-2 font-medium"
             >
-              {user.username}
-            </button>
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-violet-600 text-sm font-bold uppercase">
+                {user.username.charAt(0)}
+              </span>
+              <span className="text-sm font-medium pl-1">{user.username}</span>
+              <button
+                onClick={(event) => handleDelete(event, user)}
+                className="flex items-center justify-center w-6 h-6 rounded-full text-zinc-400 hover:text-white hover:bg-red-600 transition-colors text-xs"
+                title="Delete profile"
+              >
+                ✕
+              </button>
+            </div>
           ))}
         </div>
 

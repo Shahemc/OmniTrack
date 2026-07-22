@@ -20,13 +20,20 @@ export default function Navbar({ user, page, onNavigate, onSwitchProfile }) {
           </button>
         </div>
 
-        <button
-          onClick={onSwitchProfile}
-          className="text-sm text-zinc-400 hover:text-white"
-          title="Switch profile"
-        >
-          {user.username} ↩
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-zinc-800 rounded-full pl-1 pr-3 py-1">
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-violet-600 text-sm font-bold uppercase">
+              {user.username.charAt(0)}
+            </span>
+            <span className="text-sm font-medium text-zinc-200">{user.username}</span>
+          </div>
+          <button
+            onClick={onSwitchProfile}
+            className="text-sm text-zinc-400 hover:text-white border border-zinc-700 hover:border-violet-500 rounded-lg px-3 py-1.5 transition-colors"
+          >
+            Switch
+          </button>
+        </div>
       </div>
     </nav>
   );
